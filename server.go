@@ -20,26 +20,26 @@ func (s *Server) Serve(addr string) {
 	s.s.ListenAndServe()
 }
 
-func New(addr string, readyChan <-chan bool) *Server {
+func New(addr string, ready <-chan bool) *Server {
 	srv := Server{
 		s:         &http.Server{Addr: addr},
-		readyChan: readyChan,
+		readyChan: ready,
 		ready:     false,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/live", srv.Live)
-	mux.HandleFunc("/ready", srv.Ready)
+	mux.HandleFunc("/live", srv.liveHandle)
+	mux.HandleFunc("/ready", srv.readyHandle)
 	srv.s.Handler = mux
 
 	return &srv
 }
 
-func (s *Server) Live(w http.ResponseWriter, r *http.Request) {
+func (s *Server) liveHandle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) Ready(w http.ResponseWriter, r *http.Request) {
+func (s *Server) readyHandle(w http.ResponseWriter, r *http.Request) {
 	if s.ready {
 		w.WriteHeader(http.StatusOK)
 	} else {
