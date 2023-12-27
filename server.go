@@ -2,18 +2,19 @@ package healthcheck
 
 import (
 	"net/http"
+	"sync/atomic"
 )
 
 type Server struct {
 	s         *http.Server
 	readyChan <-chan bool
-	ready     bool
+	ready     atomic.Bool
 }
 
 func (s *Server) Serve(addr string) {
 	go func(readyChan <-chan bool) {
 		for ready := range readyChan {
-			s.ready = ready
+			s.ready.Store(ready)
 		}
 	}(s.readyChan)
 
@@ -24,7 +25,6 @@ func New(addr string, ready <-chan bool) *Server {
 	srv := Server{
 		s:         &http.Server{Addr: addr},
 		readyChan: ready,
-		ready:     false,
 	}
 
 	mux := http.NewServeMux()
@@ -40,7 +40,7 @@ func (s *Server) liveHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) readyHandle(w http.ResponseWriter, r *http.Request) {
-	if s.ready {
+	if s.ready.Load() {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
