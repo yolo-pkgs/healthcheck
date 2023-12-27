@@ -11,14 +11,14 @@ type Server struct {
 	ready     atomic.Bool
 }
 
-func (s *Server) Serve(addr string) {
+func (s *Server) Serve() error {
 	go func(readyChan <-chan bool) {
 		for ready := range readyChan {
 			s.ready.Store(ready)
 		}
 	}(s.readyChan)
 
-	s.s.ListenAndServe()
+	return s.s.ListenAndServe()
 }
 
 func New(addr string, ready <-chan bool) *Server {
@@ -35,11 +35,11 @@ func New(addr string, ready <-chan bool) *Server {
 	return &srv
 }
 
-func (s *Server) liveHandle(w http.ResponseWriter, r *http.Request) {
+func (s *Server) liveHandle(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) readyHandle(w http.ResponseWriter, r *http.Request) {
+func (s *Server) readyHandle(w http.ResponseWriter, _ *http.Request) {
 	if s.ready.Load() {
 		w.WriteHeader(http.StatusOK)
 	} else {
