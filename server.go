@@ -11,11 +11,11 @@ type Server struct {
 }
 
 func (s *Server) Serve(addr string) {
-	go func() {
-		for ready := range s.readyChan {
+	go func(readyChan <-chan bool) {
+		for ready := range readyChan {
 			s.ready = ready
 		}
-	}()
+	}(s.readyChan)
 
 	s.s.ListenAndServe()
 }
