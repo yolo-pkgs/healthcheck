@@ -1,6 +1,7 @@
 package healthcheck
 
 import (
+	"fmt"
 	"net/http"
 	"sync/atomic"
 )
@@ -21,15 +22,17 @@ func (s *Server) Serve() error {
 	return s.s.ListenAndServe()
 }
 
-func New(addr string, ready <-chan bool) *Server {
+// GET /live for liveness.
+// GET /ready for readiness.
+func New(addr string, prefix string, ready <-chan bool) *Server {
 	srv := Server{
 		s:         &http.Server{Addr: addr},
 		readyChan: ready,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/live", srv.liveHandle)
-	mux.HandleFunc("/ready", srv.readyHandle)
+	mux.HandleFunc(fmt.Sprintf("%s/live", prefix), srv.liveHandle)
+	mux.HandleFunc(fmt.Sprintf("%s/ready", prefix), srv.readyHandle)
 	srv.s.Handler = mux
 
 	return &srv
